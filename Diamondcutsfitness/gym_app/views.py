@@ -97,13 +97,12 @@ def signup(request):
 
         # Send OTP via email
         send_mail(
-            'Your OTP for Gym Registration',
-            f'Hi {username}, your OTP is: {otp}',
-            'yourgym@example.com',
-            [email],
-            fail_silently=False,
-        )
-
+                    'Your OTP for Gym Registration',
+                    f'Hi {username}, your OTP is: {otp}',
+                    settings.EMAIL_HOST_USER,  # ✅ Use the actual authenticated email
+                    [email],
+                    fail_silently=False,
+                )
         # Store user ID in session for verification
         request.session['pending_user'] = myuser.id
         messages.success(request, "OTP sent to your email. Please verify.")
@@ -164,7 +163,7 @@ def resend_otp(request):
     from_email = 'youremail@example.com'  # Replace with actual email
 
     try:
-        send_mail(subject, message, from_email, [email])
+        send_mail(subject, message, settings.EMAIL_HOST_USER, [email])
         messages.success(request, "OTP has been resent to your email.")
     except:
         messages.error(request, "Failed to send OTP. Try again later.")
@@ -173,25 +172,31 @@ def resend_otp(request):
 
 
 def handlelogin(request):
-    if request.method=="POST":        
-        username=request.POST.get('usernumber')
-        pass1=request.POST.get('pass1')
-        myuser=authenticate(username=username,password=pass1)
+    # Clear any previously stored messages
+    list(messages.get_messages(request))  # this clears queued messages
+
+    if request.method == "POST":
+        username = request.POST.get('usernumber')
+        pass1 = request.POST.get('pass1')
+        myuser = authenticate(username=username, password=pass1)
+
         if myuser is not None:
-            login(request,myuser)
-            messages.success(request,"Login Successful")
+            login(request, myuser)
+            messages.success(request, "Login Successful")
             return redirect('/')
         else:
-            messages.error(request,"Invalid Credentials")
+            messages.error(request, "Invalid Credentials")
             return redirect('/login')
-            
-        
-    return render(request,"handlelogin.html")
+
+    return render(request, "handlelogin.html")
 
 
 def handleLogout(request):
+    # Clear any previously stored messages (e.g., from login)
+    list(messages.get_messages(request))
+
     logout(request)
-    messages.success(request,"Logout Success")    
+    messages.success(request, "Logout Success")
     return redirect('/login')
 
 def contact(request):
